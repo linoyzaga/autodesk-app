@@ -1,5 +1,5 @@
-const schedulerRoutes = require('./scheduler/routes');
+const healthRoutes = require('./health/routes');
 
 module.exports = function routes(app) {
-    app.use('/scheduler', schedulerRoutes);
+    app.use('/health', healthRoutes);
 };
