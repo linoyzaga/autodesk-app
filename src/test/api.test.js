@@ -6,8 +6,8 @@ const assert = require("assert");
 mocha.describe("GET /status", function() {
     mocha.it("should return json with the services data", function(done){
         var jsonRes = {
-            "bim360dm-dev.autodesk.com": "Unavailable",
-            "commands.bim360dm-dev.autodesk.com": "Unavailable",
+            "bim360-dm": "OK",
+            "Command Processor": "OK",
             "my": "OK"
         };
 
