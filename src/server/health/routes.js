@@ -1,14 +1,15 @@
-const express   = require('express');
-const request   = require('request');
-const parser    = require('xml2json');
-const router    = express.Router();
-const consts    = require('./consts');
+const express = require('express');
+const request = require('request');
+const parser = require('xml2json');
+const router = express.Router();
+const consts = require('./consts');
+const availabilityServices = require('./availabilityHashes').availabilityServices;
 
 router.get('/status', function (req, res) {
     var result = {};
 
-    const promises = consts.services.map(service => new Promise(function(resolve, reject) {
-            request.get(service, function (err,res, body) {
+    const promises = consts.urls.map(service => new Promise(function(resolve, reject) {
+            request.get(service, function (err, res, body) {
                 if (err) { return reject(err); }
                 resolve([res, body]);
             })
@@ -25,9 +26,22 @@ router.get('/status', function (req, res) {
     });
 });
 
-router.get('/availability', function (req, res) {
+router.get('/availability/:name', function (req, res) {
+    var serviceName = req.params.name;
+    var result = {};
 
-    res.send("OK");
+    if (!serviceName) {
+        return res.status(400).send("Missing params!");
+    }
+
+    if (!consts.servicesNames.includes(serviceName)) {
+        return res.status(400).send("Service does not exist!");
+    }
+
+    var percentage = calcPercentage(serviceName);
+    result[serviceName] = percentage + "%";
+
+    res.status(200).json(result);
 });
 
 function buildGoodResult(item, result) {
@@ -58,6 +72,16 @@ function buildBadResult(item, result) {
     var serviceName = item[0].client.servername;
 
     result[serviceName] = "Unavailable"
-}
+};
+
+function calcPercentage(name){
+    var sum = 0;
+
+    Object.keys(availabilityServices[name]).forEach(function (key) {
+       if (availabilityServices[name][key] === "1") { sum++ };
+    });
+
+    return parseInt(sum / 60 * 100);
+};
 
 module.exports = router;
