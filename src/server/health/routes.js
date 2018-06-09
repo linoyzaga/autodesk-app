@@ -1,14 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const services = require('./consts').services;
-const goodResults = require('./consts').goodResults;
-const request = require('request');
-const parser = require('xml2json');
+const express   = require('express');
+const request   = require('request');
+const parser    = require('xml2json');
+const router    = express.Router();
+const consts    = require('./consts');
 
 router.get('/status', function (req, res) {
     var result = {};
 
-    const promises = services.map(service => new Promise(function(resolve, reject) {
+    const promises = consts.services.map(service => new Promise(function(resolve, reject) {
             request.get(service, function (err,res, body) {
                 if (err) { return reject(err); }
                 resolve([res, body]);
@@ -17,28 +16,12 @@ router.get('/status', function (req, res) {
     );
 
     Promise.all(promises).then(data => {
-        data.forEach(function(item){
-            switch(item[0].headers["content-type"]) {
-                case 'text/xml; charset=utf-8':
-                    var parsedResult = JSON.parse(parser.toJson(item[1]));
-                    var serviceName = parsedResult.HealthCheck["service"];
-                    var status = parsedResult.HealthCheck["status"];
-                    var res = goodResults.includes(status) ? "OK" : "BAD";
-
-                    result[serviceName] = res;
-                    break;
-                case 'application/json; charset=utf-8':
-                    var parsedResult = JSON.parse(item[1]);
-                    var status = parsedResult.status["overall"];
-                    var serviceName = parsedResult.service;
-                    var res = goodResults.includes(status) ? "OK" : "BAD"
-
-                    result[serviceName] = res;
-                    break;
-            }
+        data.forEach(function(item) {
+            item[0].statusCode !== 200 ?
+                buildBadResult(item, result) : buildGoodResult(item, result);
         })
 
-        res.status(200).send(result);
+        res.status(200).json(result);
     });
 });
 
@@ -47,27 +30,34 @@ router.get('/availability', function (req, res) {
     res.send("OK");
 });
 
-// async function checkServices() {
-//   var result = [];
+function buildGoodResult(item, result) {
+    var type = item[0].headers["content-type"];
+    var status;
+    var serviceName;
+    var parsedResult;
 
-//   for (var url in services) {
-//         var response = await requestService(url);
-//         var paresdResponse = response;
-//         result.push(paresdResponse);
-//     };
+    switch(type) {
+        case consts.contentTypes["xml"]:
+            parsedResult = JSON.parse(parser.toJson(item[1]));
+            serviceName = parsedResult.HealthCheck["service"];
+            status = parsedResult.HealthCheck["status"] || "BAD";
 
-//     return result;
-  
-// };
+            break;
+        case consts.contentTypes["json"]:
+            parsedResult = JSON.parse(item[1]);
+            serviceName = parsedResult.service;
+            status = parsedResult.status["overall"] || "BAD";
 
-// function requestService(url) {
-//     request(url, function (error, response) {
-//         if(error) {
-//             return "error";
-//         }   
+            break;
+    }
 
-//       return response;
-//     });
-// };
+    result[serviceName] = consts.goodResults.includes(status) ? "OK" : "BAD";
+};
+
+function buildBadResult(item, result) {
+    var serviceName = item[0].client.servername;
+
+    result[serviceName] = "Unavailable"
+}
 
 module.exports = router;
