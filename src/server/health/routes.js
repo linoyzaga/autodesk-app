@@ -30,10 +30,6 @@ router.get('/availability/:name', function (req, res) {
     var serviceName = req.params.name;
     var result = {};
 
-    if (!serviceName) {
-        return res.status(400).send("Missing params!");
-    }
-
     if (!consts.servicesNames.includes(serviceName)) {
         return res.status(400).send("Service does not exist!");
     }

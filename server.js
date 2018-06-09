@@ -13,4 +13,4 @@ app.listen(PORT, function() {
     console.log('Server running on ' + PORT);
 });
 
-setInterval(function() { intervalFunctions.intervalCheck() }, 6000);
+setInterval(function() { intervalFunctions.intervalCheck() }, 60000);
