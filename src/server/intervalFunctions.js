@@ -2,7 +2,9 @@ const request = require('request');
 const availabilityServices = require('./health/availabilityHashes').availabilityServices;
 
 function intervalCheck() {
-    request.get("http://localhost:8080/health/status", function (err, res, body) {
+    const host = "http://localhost:8080/health/status";
+
+    request.get(host, function (err, res, body) {
         var parsedBody = JSON.parse(body);
         var today = new Date();
         var min = today.getMinutes();
